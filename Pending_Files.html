@@ -69,6 +69,7 @@
   .s2 { background:var(--greenl); color:var(--green); border-color:#a7f3d0; }
   .s3 { background:var(--redl); color:var(--red); border-color:#fca5a5; }
   .s4 { background:var(--purplel); color:#5b21b6; border-color:#c4b5fd; }
+  .s5 { background:#fce7f3; color:#9d174d; border-color:#f9a8d4; }
   .pi { padding:5px 9px; border-radius:7px; font-size:12px; border:1px solid var(--border); background:var(--bg2); color:var(--tp); font-family:inherit; direction:ltr; transition:all 0.15s; width:130px; }
   .pi:focus { outline:none; border-color:#14b8a6; background:white; }
   .pi::placeholder { color:var(--th); font-size:11px; }
@@ -154,19 +155,29 @@
 <script>
 const SHEET_ID='1WIjD1nYYIqd5GAgvtzdGs-QnfXWQ2U9XecnwF_XY0Zg';
 const TAB='Sheet1';
-const APPS_URL='https://script.google.com/macros/s/AKfycbzvwcwU5iz4eME4FkSVlBbY8IHuwSkXhDAXyG5WFFO2m2UgesE43KZAgxgZiaxtYVVG/exec';
+const APPS_URL='https://script.google.com/macros/s/AKfycbzsMUB-Yd-boUm1iq9cr-l223JC_2fWXuc7cQxKpS76HYDPZzRMslboxM8p4LXNTw9e/exec';
 const DAYS=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-const STATUS_LABELS=['⬜ Not Contacted','🟡 No Answer','🟢 Confirmed','🔴 Issue','📤 Sent'];
-const STATUS_CLS=['s0','s1','s2','s3','s4'];
+const STATUS_LABELS=['⬜ Not Contacted','1️⃣ Labs','2️⃣ Anesthesia','3️⃣ Blood 1','4️⃣ Blood 2','5️⃣ Blood 3'];
+const STATUS_CLS=['s0','s1','s2','s3','s4','s5'];
 
 let rows=[], F={blood:'all',anest:'all'}, phones={}, mrnStatuses={};
 
-// localStorage
+// localStorage للنسخة الاحتياطية
 function loadStatuses(){ try{ return JSON.parse(localStorage.getItem('pf_statuses')||'{}'); }catch(e){ return {}; } }
-function saveStatuses(){ try{ localStorage.setItem('pf_statuses',JSON.stringify(mrnStatuses)); }catch(e){} }
+function saveStatusLocal(key,val){ try{ const s=loadStatuses(); s[key]=val; localStorage.setItem('pf_statuses',JSON.stringify(s)); }catch(e){} }
 function loadPhones(){ try{ return JSON.parse(localStorage.getItem('pf_phones')||'{}'); }catch(e){ return {}; } }
 mrnStatuses = loadStatuses();
-function getStatus(mrn){ return mrnStatuses[mrn]!==undefined?mrnStatuses[mrn]:0; }
+function getStatusKey(mrn,proc){ return mrn+'|'+proc; }
+function getStatus(mrn,proc){ const key=getStatusKey(mrn,proc); return mrnStatuses[key]!==undefined?mrnStatuses[key]:0; }
+
+// حفظ الحالة في الشيت والـ localStorage
+function saveStatus(mrn,proc,val){
+  const key=getStatusKey(mrn,proc);
+  mrnStatuses[key]=val;
+  saveStatusLocal(key,val);
+  // حفظ في الشيت
+  fetch(APPS_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({type:'status',key:key,status:val})}).catch(e=>{});
+}
 
 // نافذة الأسبوع القادم — من الأحد القادم للسبت
 function getWeekWindow(){
@@ -193,6 +204,11 @@ async function load(){
   rows.forEach(r=>{
     if(r.phone&&r.phone.trim()) phones[r.mrn]=r.phone.trim();
     else if(stored[r.mrn]) phones[r.mrn]=stored[r.mrn];
+    // تحميل الحالة من الشيت
+    if(r.status&&r.status.trim()){
+      const key=getStatusKey(r.mrn,r.procedure);
+      mrnStatuses[key]=parseInt(r.status)||0;
+    }
   });
   updateStats(); render();
   document.getElementById('updated').textContent='Last updated: '+new Date().toLocaleTimeString('en-SA');
@@ -201,7 +217,7 @@ async function load(){
 function parseCSV(csv){
   return csv.trim().split('\n').slice(1).map(line=>{
     const c=pLine(line);
-    return{ mrn:c[0]||'', lastName:c[1]||'', firstName:c[2]||'', blood:c[3]||'-', referal:c[4]||'', anesthesia:c[5]||'', surgeon:c[6]||'', procedure:c[7]||'', phone:c[8]||'' };
+    return{ mrn:c[0]||'', lastName:c[1]||'', firstName:c[2]||'', blood:c[3]||'-', referal:c[4]||'', anesthesia:c[5]||'', surgeon:c[6]||'', procedure:c[7]||'', phone:c[8]||'', status:c[9]||'' };
   }).filter(r=>r.mrn&&r.mrn!=='Record'&&(r.lastName||r.firstName));
 }
 function pLine(line){ const r=[];let cur='',q=false; for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"')q=!q;else if(ch===','&&!q){r.push(cur.trim());cur='';}else cur+=ch;} r.push(cur.trim()); return r; }
@@ -236,11 +252,13 @@ document.getElementById('reset-btn').addEventListener('click',()=>{
 });
 document.getElementById('refresh-btn').addEventListener('click',load);
 
-function cycleStatus(mrn){
-  mrnStatuses[mrn]=((getStatus(mrn))+1)%5;
-  saveStatuses();
-  const btn=document.getElementById('st-'+mrn);
-  if(btn){ const s=getStatus(mrn); btn.className='status-btn '+STATUS_CLS[s]; btn.textContent=STATUS_LABELS[s]; }
+function cycleStatus(mrn,proc){
+  const cur=getStatus(mrn,proc);
+  const next=(cur+1)%6;
+  saveStatus(mrn,proc,next);
+  const key=getStatusKey(mrn,proc);
+  const btn=document.getElementById('st-'+key.replace(/[|]/g,'-'));
+  if(btn){ btn.className='status-btn '+STATUS_CLS[next]; btn.textContent=STATUS_LABELS[next]; }
 }
 
 function savePhone(mrn,val){
@@ -248,7 +266,7 @@ function savePhone(mrn,val){
   phones[mrn]=cleaned;
   try{ const s=JSON.parse(localStorage.getItem('pf_phones')||'{}'); s[mrn]=cleaned; localStorage.setItem('pf_phones',JSON.stringify(s)); }catch(e){}
   if(cleaned.length>=9){
-    fetch(APPS_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({mrn:mrn,phone:cleaned})}).catch(e=>{});
+    fetch(APPS_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({type:'phone',mrn:mrn,phone:cleaned})}).catch(e=>{});
   }
 }
 
@@ -291,10 +309,11 @@ function render(){
     const aB=ok?'href="https://web.whatsapp.com/send?phone='+phNum+'&text='+mBlood+'" target="_blank"':'';
     const aA=ok&&anestD?'href="https://web.whatsapp.com/send?phone='+phNum+'&text='+mAnest+'" target="_blank"':'';
     const aL=ok&&anestD?'href="https://web.whatsapp.com/send?phone='+phNum+'&text='+mLabs+'" target="_blank"':'';
-    const st=getStatus(r.mrn);
+    const st=getStatus(r.mrn,r.procedure);
     html+='<tr>';
     html+='<td class="mrn">'+r.mrn+'</td>';
-    html+='<td><button class="status-btn '+STATUS_CLS[st]+'" id="st-'+r.mrn+'" onclick="cycleStatus(\''+r.mrn+'\')">'+STATUS_LABELS[st]+'</button></td>';
+    const stKey=getStatusKey(r.mrn,r.procedure).replace(/[|]/g,'-');
+    html+='<td><button class="status-btn '+STATUS_CLS[st]+'" id="st-'+stKey+'" onclick="cycleStatus(\''+r.mrn+'\',\''+r.procedure+'\')">'+STATUS_LABELS[st]+'</button></td>';
     html+='<td class="nm">'+name+'</td>';
     html+='<td>'+bloodBadge+'</td>';
     html+='<td>'+(anestD?'<span style="color:#7c3aed;font-weight:500;">'+fDate(r.anesthesia)+'</span>':'<span class="nd">Not Scheduled</span>')+'</td>';

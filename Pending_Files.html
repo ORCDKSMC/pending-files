@@ -211,6 +211,8 @@ function parseCSV(csv){
       surgeon:c[6]||'', procedure:c[7]||'', phone:c[8]||''
     };
   }).filter(r=>r.mrn&&r.mrn!=='Record'&&(r.lastName||r.firstName));
+  // تحميل أرقام الجوال المحفوظة في الشيت
+
 }
 
 function pLine(line){ const r=[];let cur='',q=false; for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"')q=!q;else if(ch===','&&!q){r.push(cur.trim());cur='';}else cur+=ch;} r.push(cur.trim()); return r; }
@@ -285,7 +287,7 @@ function render(){
   filtered.forEach((r,i)=>{
     const idx=rows.indexOf(r);
     const name=getFullName(r);
-    const ph=phones[r.mrn]||r.phone||'';
+    const ph=phones[r.mrn]||'';
     const anestDate=fDate(r.anesthesia);
     const anestD=pDate(r.anesthesia);
     const anestDay=anestD?DAYS[anestD.getDay()]:'';
@@ -346,7 +348,15 @@ function cycleStatus(mrn){
 }
 
 function savePhone(mrn, val){
-  phones[mrn]=val.trim();
+  const cleaned = val.trim();
+  phones[mrn] = cleaned;
+  // حفظ في Google Sheets
+  if(cleaned.length >= 9){
+    fetch('https://script.google.com/macros/s/AKfycbzvwcwU5iz4eME4FkSVlBbY8IHuwSkXhDAXyG5WFFO2m2UgesE43KZAgxgZiaxtYVVG/exec', {
+      method:'POST',
+      body: JSON.stringify({mrn: mrn, phone: cleaned})
+    }).catch(e=>console.log('Save error:',e));
+  }
 }
 
 function updWA(idx){

@@ -81,6 +81,9 @@
   .w-labs { background:var(--amberl); color:#92400e; border-color:#fcd34d; }
   .w-labs:hover { background:#fcd34d; }
   .wb.off { opacity:0.3; pointer-events:none; }
+  .pill.pweek { border-color:#0ea5e9; color:#0369a1; background:#e0f2fe; }
+  .pill.pweek:hover { background:#bae6fd; }
+  .pill.pweek.on { background:#0369a1; border-color:#0369a1; color:white; font-weight:700; }
   .loading { padding:70px 20px; text-align:center; color:var(--ts); }
   .spinner { width:32px; height:32px; border:2px solid var(--border); border-top-color:#14b8a6; border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 14px; }
   @keyframes spin { to { transform:rotate(360deg); } }
@@ -104,6 +107,7 @@
     <div class="st-item"><div class="st-num" id="s-anest" style="color:#c4b5fd">—</div><div class="st-lbl">With Anesthesia</div></div>
     <div class="st-item"><div class="st-num" id="s-blood-done" style="color:#86efac">—</div><div class="st-lbl">Blood Done</div></div>
     <div class="st-item"><div class="st-num" id="s-blood-not" style="color:#fca5a5">—</div><div class="st-lbl">Blood Not Done</div></div>
+    <div class="st-item"><div class="st-num" id="s-week" style="color:#7dd3fc">—</div><div class="st-lbl">Next Week</div></div>
   </div>
 </div>
 
@@ -125,6 +129,7 @@
           <span class="pill all-pill on" data-val="all">All</span>
           <span class="pill" data-val="yes">Scheduled</span>
           <span class="pill" data-val="no">Not Scheduled</span>
+          <span class="pill pweek" data-val="week">📅 Next Week</span>
         </div>
       </div>
     </div>
@@ -162,6 +167,16 @@ function saveStatuses(){ try{ localStorage.setItem('pf_statuses',JSON.stringify(
 function loadPhones(){ try{ return JSON.parse(localStorage.getItem('pf_phones')||'{}'); }catch(e){ return {}; } }
 mrnStatuses = loadStatuses();
 function getStatus(mrn){ return mrnStatuses[mrn]!==undefined?mrnStatuses[mrn]:0; }
+
+// نافذة الأسبوع القادم — من الأحد القادم للسبت
+function getWeekWindow(){
+  const now=new Date(); now.setHours(0,0,0,0);
+  const day=now.getDay();
+  const daysUntilSun=day===0?7:7-day; // الأحد القادم دائماً
+  const nextSun=new Date(now); nextSun.setDate(now.getDate()+daysUntilSun);
+  const end=new Date(nextSun); end.setDate(nextSun.getDate()+7); // حتى السبت
+  return {start:nextSun, end:end};
+}
 
 async function load(){
   document.getElementById('container').innerHTML='<div class="loading"><div class="spinner"></div><div>Loading data...</div></div>';
@@ -205,6 +220,8 @@ function updateStats(){
   document.getElementById('s-anest').textContent=rows.filter(r=>pDate(r.anesthesia)).length;
   document.getElementById('s-blood-done').textContent=rows.filter(r=>r.blood==='Done').length;
   document.getElementById('s-blood-not').textContent=rows.filter(r=>r.blood==='Not Done').length;
+  const w=getWeekWindow();
+  document.getElementById('s-week').textContent=rows.filter(r=>{ const d=pDate(r.anesthesia); return d&&d>=w.start&&d<w.end; }).length;
 }
 
 document.getElementById('bp').addEventListener('click',e=>{ const p=e.target.closest('.pill');if(!p)return; F.blood=p.dataset.val; document.querySelectorAll('#bp .pill').forEach(x=>x.classList.remove('on')); p.classList.add('on'); render(); });
@@ -241,6 +258,11 @@ function render(){
     if(F.blood!=='all'&&r.blood!==F.blood)return false;
     if(F.anest==='yes'&&!pDate(r.anesthesia))return false;
     if(F.anest==='no'&&pDate(r.anesthesia))return false;
+    if(F.anest==='week'){
+      const d=pDate(r.anesthesia);
+      const w=getWeekWindow();
+      if(!d||d<w.start||d>=w.end)return false;
+    }
     const name=getFullName(r).toLowerCase();
     if(q&&!name.includes(q)&&!r.mrn.includes(q))return false;
     return true;

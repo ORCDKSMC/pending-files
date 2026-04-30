@@ -75,6 +75,12 @@
   .blood-done { background:var(--greenl); color:var(--green); border:1px solid #a7f3d0; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
   .blood-not { background:var(--redl); color:var(--red); border:1px solid #fca5a5; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
   .blood-na { background:var(--bg2); color:var(--th); border:1px solid var(--border); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+  .status-btn { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; white-space:nowrap; font-family:inherit; }
+  .s0 { background:#f3f4f6; color:#6b7280; border-color:#d1d5db; }
+  .s1 { background:#fef9c3; color:#854d0e; border-color:#fde047; }
+  .s2 { background:var(--greenl); color:var(--green); border-color:#a7f3d0; }
+  .s3 { background:var(--redl); color:var(--red); border-color:#fca5a5; }
+  .s4 { background:var(--purplel); color:#5b21b6; border-color:#c4b5fd; }
 
   /* Inputs */
   .pi { padding:5px 9px; border-radius:7px; font-size:12px; border:1px solid var(--border); background:var(--bg2); color:var(--tp); font-family:inherit; direction:ltr; transition:all 0.15s; width:130px; }
@@ -123,12 +129,6 @@
 <div class="main">
   <div class="fc">
     <div class="fr">
-
-      <!-- Surgeon Filter -->
-      <div class="fg">
-        <div class="fg-lbl">Surgeon <span class="sc" id="sc"></span></div>
-        <div class="fps" id="sp"></div>
-      </div>
 
       <!-- Blood Filter -->
       <div class="fg">
@@ -180,6 +180,12 @@ const WA_IC='<svg class="wa-ic" viewBox="0 0 24 24"><path fill="currentColor" d=
 
 let rows=[], selS=new Set(), F={blood:'all', anest:'all'};
 let phones={};
+const STATUS_LABELS=['⬜ Not Contacted','🟡 No Answer','🟢 Confirmed','🔴 Issue','📤 Sent'];
+const STATUS_CLS=['s0','s1','s2','s3','s4'];
+function loadStatuses(){ try{ return JSON.parse(localStorage.getItem('pf_statuses')||'{}'); }catch(e){ return {}; } }
+function saveStatuses(){ try{ localStorage.setItem('pf_statuses',JSON.stringify(mrnStatuses)); }catch(e){} }
+let mrnStatuses=loadStatuses();
+function getStatus(mrn){ return mrnStatuses[mrn]!==undefined?mrnStatuses[mrn]:0; }
 
 async function load(){
   document.getElementById('container').innerHTML='<div class="loading"><div class="spinner"></div><div>Loading data...</div></div>';
@@ -191,7 +197,6 @@ async function load(){
   for(const url of urls){ try{ const r=await fetch(url,{cache:'no-store'}); if(r.ok){csv=await r.text();break;} }catch(e){} }
   if(!csv){ document.getElementById('container').innerHTML='<div class="err">⚠️ Failed to load data<br><small>Make sure the sheet is shared publicly</small><br><button onclick="load()">Retry</button></div>'; return; }
   rows=parseCSV(csv);
-  buildSurgeonFilter();
   updateStats();
   render();
   document.getElementById('updated').textContent='Last updated: '+new Date().toLocaleTimeString('en-SA');
@@ -251,9 +256,8 @@ document.getElementById('bp').addEventListener('click',e=>{ const p=e.target.clo
 document.getElementById('ap').addEventListener('click',e=>{ const p=e.target.closest('.pill');if(!p)return; F.anest=p.dataset.val; document.querySelectorAll('#ap .pill').forEach(x=>x.classList.remove('on')); p.classList.add('on'); render(); });
 document.getElementById('search').addEventListener('input',render);
 document.getElementById('reset-btn').addEventListener('click',()=>{
-  selS.clear(); F={blood:'all',anest:'all'};
-  document.getElementById('search').value=''; document.getElementById('sc').textContent='';
-  document.querySelectorAll('#sp .pill').forEach((p,i)=>p.classList.toggle('on',i===0));
+  F={blood:'all',anest:'all'};
+  document.getElementById('search').value='';
   document.querySelectorAll('#bp .pill').forEach((p,i)=>p.classList.toggle('on',i===0));
   document.querySelectorAll('#ap .pill').forEach((p,i)=>p.classList.toggle('on',i===0));
   render();
@@ -263,7 +267,6 @@ document.getElementById('refresh-btn').addEventListener('click',load);
 function render(){
   const q=document.getElementById('search').value.toLowerCase();
   const filtered=rows.filter(r=>{
-    if(selS.size>0&&!selS.has(r.surgeon))return false;
     if(F.blood!=='all'&&r.blood!==F.blood)return false;
     if(F.anest==='yes'&&!pDate(r.anesthesia))return false;
     if(F.anest==='no'&&pDate(r.anesthesia))return false;
@@ -277,7 +280,7 @@ function render(){
 
   if(!filtered.length){ document.getElementById('container').innerHTML='<div class="empty">No matching results found</div>'; return; }
 
-  let html='<table><thead><tr><th>MRN</th><th>Patient Name</th><th>Blood</th><th>Anesthesia Date</th><th>Surgeon</th><th>Procedure</th><th>Phone</th><th>Send Message</th></tr></thead><tbody>';
+  let html='<table><thead><tr><th>MRN</th><th>Contact Status</th><th>Patient Name</th><th>Blood</th><th>Anesthesia Date</th><th>Surgeon</th><th>Procedure</th><th>Phone</th><th>Send Message</th></tr></thead><tbody>';
 
   filtered.forEach((r,i)=>{
     const idx=rows.indexOf(r);
@@ -315,12 +318,14 @@ function render(){
 
     html+='<tr>';
     html+='<td class="mrn">'+r.mrn+'</td>';
+    const st=getStatus(r.mrn);
+    html+='<td><button class="status-btn '+STATUS_CLS[st]+'" id="st-'+r.mrn+'" onclick="cycleStatus(\''+r.mrn+'\')">'+STATUS_LABELS[st]+'</button></td>';
     html+='<td class="nm">'+name+'</td>';
     html+='<td>'+bloodBadge+'</td>';
     html+='<td>'+(anestD?'<span style="color:#7c3aed;font-weight:500;">'+anestDate+'</span>':'<span class="nd">Not Scheduled</span>')+'</td>';
     html+='<td title="'+r.surgeon+'">'+r.surgeon.split(' ').slice(0,3).join(' ')+'</td>';
     html+='<td>'+(r.procedure||'—')+'</td>';
-    html+='<td><input class="pi" placeholder="05XXXXXXXX" value="'+ph+'" oninput="savePhone(\''+r.mrn+'\',this.value);updWA('+idx+')"></td>';
+    html+='<td><input class="pi" placeholder="05XXXXXXXX" value="'+ph+'" oninput="savePhone(\''+r.mrn+'\',this.value)"></td>';
     html+='<td><div class="wbs" id="wa-'+idx+'">';
     html+='<a class="wb w-blood'+(ok?'':' off')+'" '+aBlood+'>'+WA_IC+' Blood</a>';
     html+='<a class="wb w-anest'+(ok&&anestD?'':' off')+'" '+(ok&&anestD?aAnest:'')+'>'+WA_IC+' Anesthesia</a>';
@@ -331,6 +336,13 @@ function render(){
 
   html+='</tbody></table>';
   document.getElementById('container').innerHTML=html;
+}
+
+function cycleStatus(mrn){
+  mrnStatuses[mrn]=((getStatus(mrn))+1)%5;
+  saveStatuses();
+  const btn=document.getElementById('st-'+mrn);
+  if(btn){ const s=getStatus(mrn); btn.className='status-btn '+STATUS_CLS[s]; btn.textContent=STATUS_LABELS[s]; }
 }
 
 function savePhone(mrn, val){

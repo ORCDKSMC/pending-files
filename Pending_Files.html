@@ -83,6 +83,9 @@
   .w-labs:hover { background:#fcd34d; }
   .wb.off { opacity:0.3; pointer-events:none; }
   .pill.pweek { border-color:#0ea5e9; color:#0369a1; background:#e0f2fe; }
+  .pill.pref { border-color:#0d9488; color:#0f766e; background:#ccfbf1; }
+  .pill.pref:hover { background:#99f6e4; }
+  .pill.pref.on { background:#0f766e; border-color:#0f766e; color:white; font-weight:700; }
   .pill.pweek:hover { background:#bae6fd; }
   .pill.pweek.on { background:#0369a1; border-color:#0369a1; color:white; font-weight:700; }
   .loading { padding:70px 20px; text-align:center; color:var(--ts); }
@@ -108,6 +111,7 @@
     <div class="st-item"><div class="st-num" id="s-anest" style="color:#c4b5fd">—</div><div class="st-lbl">With Anesthesia</div></div>
     <div class="st-item"><div class="st-num" id="s-blood-done" style="color:#86efac">—</div><div class="st-lbl">Blood Done</div></div>
     <div class="st-item"><div class="st-num" id="s-blood-not" style="color:#fca5a5">—</div><div class="st-lbl">Blood Not Done</div></div>
+    <div class="st-item"><div class="st-num" id="s-referal" style="color:#5eead4">—</div><div class="st-lbl">Has Referal</div></div>
     <div class="st-item"><div class="st-num" id="s-week" style="color:#7dd3fc">—</div><div class="st-lbl">Next Week</div></div>
   </div>
 </div>
@@ -131,6 +135,14 @@
           <span class="pill" data-val="yes">Scheduled</span>
           <span class="pill" data-val="no">Not Scheduled</span>
           <span class="pill pweek" data-val="week">📅 Next Week</span>
+        </div>
+      </div>
+      <div class="fg">
+        <div class="fg-lbl">Referal</div>
+        <div class="fps" id="rp">
+          <span class="pill all-pill on" data-val="all">All</span>
+          <span class="pill pref" data-val="yes">Has Referal</span>
+          <span class="pill" data-val="no">No Referal</span>
         </div>
       </div>
     </div>
@@ -160,7 +172,7 @@ const DAYS=['الأحد','الاثنين','الثلاثاء','الأربعاء',
 const STATUS_LABELS=['⬜ Not Contacted','1️⃣ Labs','2️⃣ Anesthesia','3️⃣ Blood 1','4️⃣ Blood 2','5️⃣ Blood 3'];
 const STATUS_CLS=['s0','s1','s2','s3','s4','s5'];
 
-let rows=[], F={blood:'all',anest:'all'}, phones={}, mrnStatuses={};
+let rows=[], F={blood:'all',anest:'all',referal:'all'}, phones={}, mrnStatuses={};
 
 // localStorage للنسخة الاحتياطية
 function loadStatuses(){ try{ return JSON.parse(localStorage.getItem('pf_statuses')||'{}'); }catch(e){ return {}; } }
@@ -236,18 +248,22 @@ function updateStats(){
   document.getElementById('s-anest').textContent=rows.filter(r=>pDate(r.anesthesia)).length;
   document.getElementById('s-blood-done').textContent=rows.filter(r=>r.blood==='Done').length;
   document.getElementById('s-blood-not').textContent=rows.filter(r=>r.blood==='Not Done').length;
+  document.getElementById('s-referal').textContent=rows.filter(r=>pDate(r.referal)).length;
   const w=getWeekWindow();
   document.getElementById('s-week').textContent=rows.filter(r=>{ const d=pDate(r.anesthesia); return d&&d>=w.start&&d<w.end; }).length;
 }
 
 document.getElementById('bp').addEventListener('click',e=>{ const p=e.target.closest('.pill');if(!p)return; F.blood=p.dataset.val; document.querySelectorAll('#bp .pill').forEach(x=>x.classList.remove('on')); p.classList.add('on'); render(); });
 document.getElementById('ap').addEventListener('click',e=>{ const p=e.target.closest('.pill');if(!p)return; F.anest=p.dataset.val; document.querySelectorAll('#ap .pill').forEach(x=>x.classList.remove('on')); p.classList.add('on'); render(); });
+document.getElementById('rp').addEventListener('click',e=>{ const p=e.target.closest('.pill');if(!p)return; F.referal=p.dataset.val; document.querySelectorAll('#rp .pill').forEach(x=>x.classList.remove('on')); p.classList.add('on'); render(); });
 document.getElementById('search').addEventListener('input',render);
 document.getElementById('reset-btn').addEventListener('click',()=>{
   F={blood:'all',anest:'all'};
   document.getElementById('search').value='';
+  F.referal='all';
   document.querySelectorAll('#bp .pill').forEach((p,i)=>p.classList.toggle('on',i===0));
   document.querySelectorAll('#ap .pill').forEach((p,i)=>p.classList.toggle('on',i===0));
+  document.querySelectorAll('#rp .pill').forEach((p,i)=>p.classList.toggle('on',i===0));
   render();
 });
 document.getElementById('refresh-btn').addEventListener('click',load);
@@ -276,9 +292,12 @@ function render(){
     if(F.blood!=='all'&&r.blood!==F.blood)return false;
     if(F.anest==='yes'&&!pDate(r.anesthesia))return false;
     if(F.anest==='no'&&pDate(r.anesthesia))return false;
+    if(F.referal==='yes'&&!pDate(r.referal))return false;
+    if(F.referal==='no'&&pDate(r.referal))return false;
     if(F.anest==='week'){
       const d=pDate(r.anesthesia);
-      const w=getWeekWindow();
+      document.getElementById('s-referal').textContent=rows.filter(r=>pDate(r.referal)).length;
+  const w=getWeekWindow();
       if(!d||d<w.start||d>=w.end)return false;
     }
     const name=getFullName(r).toLowerCase();
@@ -288,9 +307,17 @@ function render(){
 
   document.getElementById('shown').textContent=filtered.length;
   document.getElementById('total').textContent=rows.length;
+  // ترتيب حسب موعد التحويل — الأقرب أو السابق أولاً
+  filtered.sort((a,b)=>{
+    const da=pDate(a.referal), db=pDate(b.referal);
+    if(da&&db) return da-db;
+    if(da) return -1;
+    if(db) return 1;
+    return 0;
+  });
   if(!filtered.length){ document.getElementById('container').innerHTML='<div class="empty">No matching results found</div>'; return; }
 
-  let html='<table><thead><tr><th>MRN</th><th>Contact Status</th><th>Patient Name</th><th>Blood</th><th>Anesthesia Date</th><th>Surgeon</th><th>Procedure</th><th>Phone</th><th>Send Message</th></tr></thead><tbody>';
+  let html='<table><thead><tr><th>MRN</th><th>Contact Status</th><th>Patient Name</th><th>Blood</th><th>Referal Date</th><th>Anesthesia Date</th><th>Surgeon</th><th>Procedure</th><th>Phone</th><th>Send Message</th></tr></thead><tbody>';
 
   filtered.forEach(r=>{
     const name=getFullName(r);
@@ -316,6 +343,10 @@ function render(){
     html+='<td><button class="status-btn '+STATUS_CLS[st]+'" id="st-'+stKey+'" onclick="cycleStatus(\''+r.mrn+'\',\''+r.procedure+'\')">'+STATUS_LABELS[st]+'</button></td>';
     html+='<td class="nm">'+name+'</td>';
     html+='<td>'+bloodBadge+'</td>';
+    const refD=pDate(r.referal);
+    const today=new Date(); today.setHours(0,0,0,0);
+    const refColor=refD?(refD<today?'#dc2626':refD-today<7*86400000?'#d97706':'#059669'):'';
+    html+='<td>'+(refD?'<span style="color:'+refColor+';font-weight:500;">'+fDate(r.referal)+'</span>':'<span class="nd">—</span>')+'</td>';
     html+='<td>'+(anestD?'<span style="color:#7c3aed;font-weight:500;">'+fDate(r.anesthesia)+'</span>':'<span class="nd">Not Scheduled</span>')+'</td>';
     html+='<td title="'+r.surgeon+'">'+r.surgeon.split(' ').slice(0,3).join(' ')+'</td>';
     html+='<td>'+(r.procedure||'—')+'</td>';

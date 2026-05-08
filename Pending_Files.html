@@ -38,6 +38,10 @@
   .pill:hover { border-color:#14b8a6; background:var(--teall); }
   .pill.on { background:#0f766e; border-color:#0f766e; color:white; font-weight:600; }
   .pill.all-pill.on { color:white; font-weight:700; box-shadow:0 2px 8px rgba(15,118,110,0.3); }
+  .pill.pweek { border-color:#0ea5e9; color:#0369a1; background:#e0f2fe; }
+  .pill.pweek.on { background:#0369a1; border-color:#0369a1; color:white; font-weight:700; }
+  .pill.ppast { border-color:#dc2626; color:#dc2626; background:#fee2e2; }
+  .pill.ppast.on { background:#dc2626; border-color:#dc2626; color:white; font-weight:700; }
   .si { padding:8px 13px; border-radius:9px; font-size:13px; border:1px solid var(--border); background:var(--bg2); color:var(--tp); font-family:inherit; transition:all 0.15s; }
   .si::placeholder { color:var(--th); }
   .si:focus { outline:none; border-color:#14b8a6; background:white; }
@@ -56,6 +60,7 @@
   tbody tr { border-bottom:1px solid #f1f5f9; transition:background 0.1s; }
   tbody tr:last-child { border-bottom:none; }
   tbody tr:hover { background:#f0fdfa; }
+  tbody tr.past-due { background:#fff1f2; }
   td { padding:9px 16px; white-space:nowrap; vertical-align:middle; }
   .mrn { font-family:monospace; font-size:12px; color:var(--th); }
   .nm { font-weight:600; color:var(--tp); }
@@ -81,13 +86,9 @@
   .w-anest:hover { background:#c4b5fd; }
   .w-labs { background:var(--amberl); color:#92400e; border-color:#fcd34d; }
   .w-labs:hover { background:#fcd34d; }
+  .w-elig { background:#fce7f3; color:#9d174d; border-color:#f9a8d4; }
+  .w-elig:hover { background:#f9a8d4; }
   .wb.off { opacity:0.3; pointer-events:none; }
-  .pill.pweek { border-color:#0ea5e9; color:#0369a1; background:#e0f2fe; }
-  .pill.pref { border-color:#0d9488; color:#0f766e; background:#ccfbf1; }
-  .pill.pref:hover { background:#99f6e4; }
-  .pill.pref.on { background:#0f766e; border-color:#0f766e; color:white; font-weight:700; }
-  .pill.pweek:hover { background:#bae6fd; }
-  .pill.pweek.on { background:#0369a1; border-color:#0369a1; color:white; font-weight:700; }
   .loading { padding:70px 20px; text-align:center; color:var(--ts); }
   .spinner { width:32px; height:32px; border:2px solid var(--border); border-top-color:#14b8a6; border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 14px; }
   @keyframes spin { to { transform:rotate(360deg); } }
@@ -108,11 +109,10 @@
   </div>
   <div class="hdr-stats">
     <div class="st-item"><div class="st-num" id="s-total" style="color:#a7f3d0">—</div><div class="st-lbl">Total</div></div>
-    <div class="st-item"><div class="st-num" id="s-anest" style="color:#c4b5fd">—</div><div class="st-lbl">With Anesthesia</div></div>
+    <div class="st-item"><div class="st-num" id="s-anest" style="color:#c4b5fd">—</div><div class="st-lbl">Anesthesia</div></div>
     <div class="st-item"><div class="st-num" id="s-blood-done" style="color:#86efac">—</div><div class="st-lbl">Blood Done</div></div>
     <div class="st-item"><div class="st-num" id="s-blood-not" style="color:#fca5a5">—</div><div class="st-lbl">Blood Not Done</div></div>
-    <div class="st-item"><div class="st-num" id="s-referal" style="color:#5eead4">—</div><div class="st-lbl">Has Referal</div></div>
-    <div class="st-item"><div class="st-num" id="s-week" style="color:#7dd3fc">—</div><div class="st-lbl">Next Week</div></div>
+    <div class="st-item"><div class="st-num" id="s-past" style="color:#fca5a5">—</div><div class="st-lbl">Past Due</div></div>
   </div>
 </div>
 
@@ -135,13 +135,14 @@
           <span class="pill" data-val="yes">Scheduled</span>
           <span class="pill" data-val="no">Not Scheduled</span>
           <span class="pill pweek" data-val="week">📅 Next Week</span>
+          <span class="pill ppast" data-val="past">⚠️ Past Due</span>
         </div>
       </div>
       <div class="fg">
         <div class="fg-lbl">Referal</div>
         <div class="fps" id="rp">
           <span class="pill all-pill on" data-val="all">All</span>
-          <span class="pill pref" data-val="yes">Has Referal</span>
+          <span class="pill" data-val="yes">Has Referal</span>
           <span class="pill" data-val="no">No Referal</span>
         </div>
       </div>
@@ -151,7 +152,7 @@
   <div class="rb">
     <div class="rc">Showing <span id="shown">—</span> of <span id="total">—</span> patients &nbsp;·&nbsp; <span style="color:var(--th);font-size:11px;" id="updated"></span></div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <input class="si" id="search" placeholder="🔍  Search by name or MRN..." style="width:220px;">
+      <input class="si" id="search" placeholder="🔍  Search..." style="width:200px;">
       <button class="btn" id="reset-btn">↺ Clear</button>
       <button class="btn btn-refresh" id="refresh-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15"/></svg>
@@ -174,31 +175,26 @@ const STATUS_CLS=['s0','s1','s2','s3','s4','s5'];
 
 let rows=[], F={blood:'all',anest:'all',referal:'all'}, phones={}, mrnStatuses={};
 
-// localStorage للنسخة الاحتياطية
 function loadStatuses(){ try{ return JSON.parse(localStorage.getItem('pf_statuses')||'{}'); }catch(e){ return {}; } }
 function saveStatusLocal(key,val){ try{ const s=loadStatuses(); s[key]=val; localStorage.setItem('pf_statuses',JSON.stringify(s)); }catch(e){} }
 function loadPhones(){ try{ return JSON.parse(localStorage.getItem('pf_phones')||'{}'); }catch(e){ return {}; } }
-mrnStatuses = loadStatuses();
+mrnStatuses=loadStatuses();
 function getStatusKey(mrn,proc){ return mrn+'|'+proc; }
 function getStatus(mrn,proc){ const key=getStatusKey(mrn,proc); return mrnStatuses[key]!==undefined?mrnStatuses[key]:0; }
-
-// حفظ الحالة في الشيت والـ localStorage
 function saveStatus(mrn,proc,val){
   const key=getStatusKey(mrn,proc);
   mrnStatuses[key]=val;
   saveStatusLocal(key,val);
-  // حفظ في الشيت
   fetch(APPS_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({type:'status',key:key,status:val})}).catch(e=>{});
 }
 
-// نافذة الأسبوع القادم — من الأحد القادم للسبت
 function getWeekWindow(){
   const now=new Date(); now.setHours(0,0,0,0);
   const day=now.getDay();
-  const daysUntilSun=day===0?7:7-day; // الأحد القادم دائماً
+  const daysUntilSun=day===0?7:7-day;
   const nextSun=new Date(now); nextSun.setDate(now.getDate()+daysUntilSun);
-  const end=new Date(nextSun); end.setDate(nextSun.getDate()+7); // حتى السبت
-  return {start:nextSun, end:end};
+  const end=new Date(nextSun); end.setDate(nextSun.getDate()+7);
+  return {start:nextSun,end:end};
 }
 
 async function load(){
@@ -209,14 +205,12 @@ async function load(){
   ];
   let csv=null;
   for(const url of urls){ try{ const r=await fetch(url,{cache:'no-store'}); if(r.ok){csv=await r.text();break;} }catch(e){} }
-  if(!csv){ document.getElementById('container').innerHTML='<div class="err">⚠️ Failed to load data<br><small>Make sure the sheet is shared publicly</small><br><button onclick="load()">Retry</button></div>'; return; }
+  if(!csv){ document.getElementById('container').innerHTML='<div class="err">⚠️ Failed to load data<br><button onclick="load()">Retry</button></div>'; return; }
   rows=parseCSV(csv);
-  // تحميل الأرقام من الشيت أولاً ثم localStorage
   const stored=loadPhones();
   rows.forEach(r=>{
     if(r.phone&&r.phone.trim()) phones[r.mrn]=r.phone.trim();
     else if(stored[r.mrn]) phones[r.mrn]=stored[r.mrn];
-    // تحميل الحالة من الشيت
     if(r.status&&r.status.trim()){
       const key=getStatusKey(r.mrn,r.procedure);
       mrnStatuses[key]=parseInt(r.status)||0;
@@ -229,7 +223,7 @@ async function load(){
 function parseCSV(csv){
   return csv.trim().split('\n').slice(1).map(line=>{
     const c=pLine(line);
-    return{ mrn:c[0]||'', lastName:c[1]||'', firstName:c[2]||'', blood:c[3]||'-', referal:c[4]||'', anesthesia:c[5]||'', surgeon:c[6]||'', procedure:c[7]||'', phone:c[8]||'', status:c[9]||'' };
+    return{mrn:c[0]||'',lastName:c[1]||'',firstName:c[2]||'',blood:c[3]||'-',referal:c[4]||'',anesthesia:c[5]||'',surgeon:c[6]||'',procedure:c[7]||'',phone:c[8]||'',status:c[9]||''};
   }).filter(r=>r.mrn&&r.mrn!=='Record'&&(r.lastName||r.firstName));
 }
 function pLine(line){ const r=[];let cur='',q=false; for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"')q=!q;else if(ch===','&&!q){r.push(cur.trim());cur='';}else cur+=ch;} r.push(cur.trim()); return r; }
@@ -244,13 +238,12 @@ function fDate(raw){ const d=pDate(raw); if(!d)return '—'; return pad(d.getDat
 function pad(n){ return String(n).padStart(2,'0'); }
 
 function updateStats(){
+  const now=new Date(); now.setHours(0,0,0,0);
   document.getElementById('s-total').textContent=rows.length;
   document.getElementById('s-anest').textContent=rows.filter(r=>pDate(r.anesthesia)).length;
   document.getElementById('s-blood-done').textContent=rows.filter(r=>r.blood==='Done').length;
   document.getElementById('s-blood-not').textContent=rows.filter(r=>r.blood==='Not Done').length;
-  document.getElementById('s-referal').textContent=rows.filter(r=>pDate(r.referal)).length;
-  const w=getWeekWindow();
-  document.getElementById('s-week').textContent=rows.filter(r=>{ const d=pDate(r.anesthesia); return d&&d>=w.start&&d<w.end; }).length;
+  document.getElementById('s-past').textContent=rows.filter(r=>{ const d=pDate(r.anesthesia); return d&&d<now; }).length;
 }
 
 document.getElementById('bp').addEventListener('click',e=>{ const p=e.target.closest('.pill');if(!p)return; F.blood=p.dataset.val; document.querySelectorAll('#bp .pill').forEach(x=>x.classList.remove('on')); p.classList.add('on'); render(); });
@@ -258,9 +251,8 @@ document.getElementById('ap').addEventListener('click',e=>{ const p=e.target.clo
 document.getElementById('rp').addEventListener('click',e=>{ const p=e.target.closest('.pill');if(!p)return; F.referal=p.dataset.val; document.querySelectorAll('#rp .pill').forEach(x=>x.classList.remove('on')); p.classList.add('on'); render(); });
 document.getElementById('search').addEventListener('input',render);
 document.getElementById('reset-btn').addEventListener('click',()=>{
-  F={blood:'all',anest:'all'};
+  F={blood:'all',anest:'all',referal:'all'};
   document.getElementById('search').value='';
-  F.referal='all';
   document.querySelectorAll('#bp .pill').forEach((p,i)=>p.classList.toggle('on',i===0));
   document.querySelectorAll('#ap .pill').forEach((p,i)=>p.classList.toggle('on',i===0));
   document.querySelectorAll('#rp .pill').forEach((p,i)=>p.classList.toggle('on',i===0));
@@ -272,8 +264,8 @@ function cycleStatus(mrn,proc){
   const cur=getStatus(mrn,proc);
   const next=(cur+1)%6;
   saveStatus(mrn,proc,next);
-  const key=getStatusKey(mrn,proc);
-  const btn=document.getElementById('st-'+key.replace(/[|]/g,'-'));
+  const key=getStatusKey(mrn,proc).replace(/[|]/g,'-');
+  const btn=document.getElementById('st-'+key);
   if(btn){ btn.className='status-btn '+STATUS_CLS[next]; btn.textContent=STATUS_LABELS[next]; }
 }
 
@@ -284,37 +276,38 @@ function savePhone(mrn,val){
   if(cleaned.length>=9){
     fetch(APPS_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({type:'phone',mrn:mrn,phone:cleaned})}).catch(e=>{});
   }
+  // تحديث أزرار الواتساب مباشرة بدون render
+  const row=rows.find(r=>r.mrn===mrn);
+  if(row){
+    const wbEl=document.getElementById('wb-'+mrn);
+    if(wbEl) wbEl.innerHTML=buildWAbtns(row,cleaned);
+  }
 }
 
 function render(){
   const q=document.getElementById('search').value.toLowerCase();
+  const now=new Date(); now.setHours(0,0,0,0);
   const filtered=rows.filter(r=>{
     if(F.blood!=='all'&&r.blood!==F.blood)return false;
     if(F.anest==='yes'&&!pDate(r.anesthesia))return false;
     if(F.anest==='no'&&pDate(r.anesthesia))return false;
+    if(F.anest==='week'){ const d=pDate(r.anesthesia); const w=getWeekWindow(); if(!d||d<w.start||d>=w.end)return false; }
+    if(F.anest==='past'){ const d=pDate(r.anesthesia); if(!d||d>=now)return false; }
     if(F.referal==='yes'&&!pDate(r.referal))return false;
     if(F.referal==='no'&&pDate(r.referal))return false;
-    if(F.anest==='week'){
-      const d=pDate(r.anesthesia);
-      document.getElementById('s-referal').textContent=rows.filter(r=>pDate(r.referal)).length;
-  const w=getWeekWindow();
-      if(!d||d<w.start||d>=w.end)return false;
-    }
     const name=getFullName(r).toLowerCase();
     if(q&&!name.includes(q)&&!r.mrn.includes(q))return false;
     return true;
   });
 
+  // ترتيب حسب Referal
+  filtered.sort((a,b)=>{
+    const da=pDate(a.referal),db=pDate(b.referal);
+    if(da&&db)return da-db; if(da)return -1; if(db)return 1; return 0;
+  });
+
   document.getElementById('shown').textContent=filtered.length;
   document.getElementById('total').textContent=rows.length;
-  // ترتيب حسب موعد التحويل — الأقرب أو السابق أولاً
-  filtered.sort((a,b)=>{
-    const da=pDate(a.referal), db=pDate(b.referal);
-    if(da&&db) return da-db;
-    if(da) return -1;
-    if(db) return 1;
-    return 0;
-  });
   if(!filtered.length){ document.getElementById('container').innerHTML='<div class="empty">No matching results found</div>'; return; }
 
   let html='<table><thead><tr><th>MRN</th><th>Contact Status</th><th>Patient Name</th><th>Blood</th><th>Referal Date</th><th>Anesthesia Date</th><th>Surgeon</th><th>Procedure</th><th>Phone</th><th>Send Message</th></tr></thead><tbody>';
@@ -323,43 +316,55 @@ function render(){
     const name=getFullName(r);
     const ph=phones[r.mrn]||'';
     const anestD=pDate(r.anesthesia);
-    const anestDay=anestD?DAYS[anestD.getDay()]:'';
-    const anestDs=anestD?pad(anestD.getDate())+'-'+pad(anestD.getMonth()+1)+'-'+anestD.getFullYear():'___';
-    const bloodBadge=r.blood==='Done'?'<span class="blood-done">✓ Done</span>':r.blood==='Not Done'?'<span class="blood-not">✗ Not Done</span>':'<span class="blood-na">—</span>';
-    const cl=ph.replace(/\D/g,'');
-    const ok=cl.length>=9;
-    const phNum='966'+cl.replace(/^0/,'');
-    const rtl='\u202B';
-    const mBlood=encodeURIComponent(rtl+'السلام عليكم ورحمة الله وبركاته\n'+rtl+'عزيزي/عزيزتي '+name+'\n'+rtl+'رقم الملف: '+r.mrn+'\n\n'+rtl+'نفيدكم بأنه يُرجى تسليم ورقة التبرع بالدم في أقرب وقت ممكن لاستكمال الإجراءات اللازمة.\n\n'+rtl+'إذا لم تكن لديكم الورقة يمكنكم استلامها عن طريق المكتب.\n\n'+rtl+'⚠️ تنبيه: عدم تسليم الورقة قد يؤثر على جدولة موعد عمليتكم.\n\n'+rtl+'مدينة الملك سعود الطبية - مكتب تنسيق العمليات');
-    const mAnest=encodeURIComponent(rtl+'السلام عليكم ورحمة الله وبركاته\n'+rtl+'عزيزي/عزيزتي '+name+'\n'+rtl+'رقم الملف: '+r.mrn+'\n\n'+rtl+'نودّ تذكيركم بموعد عيادة التخدير:\n'+rtl+'📅 يوم '+anestDay+' الموافق '+anestDs+'\n\n'+rtl+'📌 تعليمات مهمة:\n'+rtl+'• يُرجى الحضور في الموعد المحدد\n'+rtl+'• إحضار الهوية الوطنية / الإقامة\n\n'+rtl+'⚠️ تنبيه: عدم الحضور في الموعد المحدد يؤدي إلى إغلاق الطلب الجراحي.\n\n'+rtl+'مدينة الملك سعود الطبية - مكتب تنسيق العمليات');
-    const mLabs=encodeURIComponent(rtl+'السلام عليكم ورحمة الله وبركاته\n'+rtl+'عزيزي/عزيزتي '+name+'\n'+rtl+'رقم الملف: '+r.mrn+'\n\n'+rtl+'نودّ تذكيركم بضرورة إجراء التحاليل الطبية المطلوبة قبل موعد عيادة التخدير:\n'+rtl+'📅 يوم '+anestDay+' الموافق '+anestDs+'\n\n'+rtl+'📌 يُرجى إجراء التحاليل قبل الموعد بوقت كافٍ.\n\n'+rtl+'عدم إجراء التحاليل قد يؤدي إلى حجز موعد آخر نظراً لعدم وجود تحاليل.\n\n'+rtl+'مدينة الملك سعود الطبية - مكتب تنسيق العمليات');
-    const aB=ok?'href="https://web.whatsapp.com/send?phone='+phNum+'&text='+mBlood+'" target="_blank"':'';
-    const aA=ok&&anestD?'href="https://web.whatsapp.com/send?phone='+phNum+'&text='+mAnest+'" target="_blank"':'';
-    const aL=ok&&anestD?'href="https://web.whatsapp.com/send?phone='+phNum+'&text='+mLabs+'" target="_blank"':'';
-    const st=getStatus(r.mrn,r.procedure);
-    html+='<tr>';
-    html+='<td class="mrn">'+r.mrn+'</td>';
-    const stKey=getStatusKey(r.mrn,r.procedure).replace(/[|]/g,'-');
-    html+='<td><button class="status-btn '+STATUS_CLS[st]+'" id="st-'+stKey+'" onclick="cycleStatus(\''+r.mrn+'\',\''+r.procedure+'\')">'+STATUS_LABELS[st]+'</button></td>';
-    html+='<td class="nm">'+name+'</td>';
-    html+='<td>'+bloodBadge+'</td>';
     const refD=pDate(r.referal);
+    const isPast=anestD&&anestD<now;
     const today=new Date(); today.setHours(0,0,0,0);
     const refColor=refD?(refD<today?'#dc2626':refD-today<7*86400000?'#d97706':'#059669'):'';
+    const bloodBadge=r.blood==='Done'?'<span class="blood-done">✓ Done</span>':r.blood==='Not Done'?'<span class="blood-not">✗ Not Done</span>':'<span class="blood-na">—</span>';
+    const st=getStatus(r.mrn,r.procedure);
+    const stKey=getStatusKey(r.mrn,r.procedure).replace(/[|]/g,'-');
+
+    html+='<tr'+(isPast?' class="past-due"':'')+'>'; 
+    html+='<td class="mrn">'+r.mrn+'</td>';
+    html+='<td><button class="status-btn '+STATUS_CLS[st]+'" id="st-'+stKey+'" onclick="cycleStatus(\''+r.mrn+'\',\''+r.procedure.replace(/'/g,"\\'")+'\')">' +STATUS_LABELS[st]+'</button></td>';
+    html+='<td class="nm">'+name+'</td>';
+    html+='<td>'+bloodBadge+'</td>';
     html+='<td>'+(refD?'<span style="color:'+refColor+';font-weight:500;">'+fDate(r.referal)+'</span>':'<span class="nd">—</span>')+'</td>';
-    html+='<td>'+(anestD?'<span style="color:#7c3aed;font-weight:500;">'+fDate(r.anesthesia)+'</span>':'<span class="nd">Not Scheduled</span>')+'</td>';
+    html+='<td>'+(anestD?'<span style="color:'+(isPast?'#dc2626':'#7c3aed')+';font-weight:500;">'+fDate(r.anesthesia)+'</span>':'<span class="nd">Not Scheduled</span>')+'</td>';
     html+='<td title="'+r.surgeon+'">'+r.surgeon.split(' ').slice(0,3).join(' ')+'</td>';
     html+='<td>'+(r.procedure||'—')+'</td>';
     html+='<td><input class="pi" placeholder="05XXXXXXXX" value="'+ph+'" oninput="savePhone(\''+r.mrn+'\',this.value)"></td>';
-    html+='<td><div class="wbs">';
-    html+='<a class="wb w-blood'+(ok?'':' off')+'" '+aB+'>🩸 Blood</a>';
-    html+='<a class="wb w-anest'+(ok&&anestD?'':' off')+'" '+(ok&&anestD?aA:'')+'>💉 Anesthesia</a>';
-    html+='<a class="wb w-labs'+(ok&&anestD?'':' off')+'" '+(ok&&anestD?aL:'')+'>🧪 Labs</a>';
-    html+='</div></td>';
+    html+='<td><div class="wbs" id="wb-'+r.mrn+'">'+buildWAbtns(r,ph)+'</div></td>';
     html+='</tr>';
   });
   html+='</tbody></table>';
   document.getElementById('container').innerHTML=html;
+}
+
+function buildWAbtns(r,ph){
+  const name=getFullName(r);
+  const anestD=pDate(r.anesthesia);
+  const anestDay=anestD?DAYS[anestD.getDay()]:'';
+  const anestDs=anestD?pad(anestD.getDate())+'-'+pad(anestD.getMonth()+1)+'-'+anestD.getFullYear():'___';
+  const cl=ph.replace(/\D/g,'');
+  const ok=cl.length>=9;
+  const phNum='966'+cl.replace(/^0/,'');
+  const rtl='\u202B';
+
+  const mBlood=encodeURIComponent(rtl+'السلام عليكم ورحمة الله وبركاته\n'+rtl+'عزيزي/عزيزتي '+name+'\n'+rtl+'رقم الملف: '+r.mrn+'\n\n'+rtl+'نفيدكم بأنه يُرجى تسليم ورقة التبرع بالدم في أقرب وقت ممكن لاستكمال الإجراءات اللازمة.\n\n'+rtl+'إذا لم تكن لديكم الورقة يمكنكم استلامها عن طريق المكتب.\n\n'+rtl+'⚠️ تنبيه: عدم تسليم الورقة قد يؤثر على جدولة موعد عمليتكم.\n\n'+rtl+'مدينة الملك سعود الطبية - مكتب تنسيق العمليات');
+  const mAnest=encodeURIComponent(rtl+'السلام عليكم ورحمة الله وبركاته\n'+rtl+'عزيزي/عزيزتي '+name+'\n'+rtl+'رقم الملف: '+r.mrn+'\n\n'+rtl+'نودّ تذكيركم بموعد عيادة التخدير:\n'+rtl+'📅 يوم '+anestDay+' الموافق '+anestDs+'\n\n'+rtl+'📌 تعليمات مهمة:\n'+rtl+'• يُرجى الحضور في الموعد المحدد\n'+rtl+'• إحضار الهوية الوطنية / الإقامة\n\n'+rtl+'⚠️ تنبيه: عدم الحضور في الموعد المحدد يؤدي إلى إغلاق الطلب الجراحي.\n\n'+rtl+'مدينة الملك سعود الطبية - مكتب تنسيق العمليات');
+  const mLabs=encodeURIComponent(rtl+'السلام عليكم ورحمة الله وبركاته\n'+rtl+'عزيزي/عزيزتي '+name+'\n'+rtl+'رقم الملف: '+r.mrn+'\n\n'+rtl+'نودّ تذكيركم بضرورة إجراء التحاليل الطبية المطلوبة قبل موعد عيادة التخدير:\n'+rtl+'📅 يوم '+anestDay+' الموافق '+anestDs+'\n\n'+rtl+'📌 يُرجى إجراء التحاليل قبل الموعد بوقت كافٍ.\n\n'+rtl+'عدم إجراء التحاليل قد يؤدي إلى حجز موعد آخر نظراً لعدم وجود تحاليل.\n\n'+rtl+'مدينة الملك سعود الطبية - مكتب تنسيق العمليات');
+  const mElig=encodeURIComponent(rtl+'السلام عليكم ورحمة الله وبركاته\n'+rtl+'عزيزي/عزيزتي '+name+'\n'+rtl+'رقم الملف: '+r.mrn+'\n\n'+rtl+'نفيدكم بأنه يُرجى الحضور إلى مكتب تنسيق العمليات لاستلام نموذج العملية الجراحية وختمه من مكتب أهلية العلاج وإعادته إلينا.\n\n'+rtl+'📌 يُرجى إحضار:\n'+rtl+'• الإقامة\n'+rtl+'• أي وثائق رسمية تخص أهلية العلاج\n\n'+rtl+'⚠️ تنبيه: في حال عدم الحضور خلال 7 أيام سيتم إغلاق الطلب الجراحي.\n\n'+rtl+'مدينة الملك سعود الطبية - مكتب تنسيق العمليات');
+
+  const aB=ok?'href="https://web.whatsapp.com/send?phone='+phNum+'&text='+mBlood+'" target="_blank"':'';
+  const aA=ok&&anestD?'href="https://web.whatsapp.com/send?phone='+phNum+'&text='+mAnest+'" target="_blank"':'';
+  const aL=ok&&anestD?'href="https://web.whatsapp.com/send?phone='+phNum+'&text='+mLabs+'" target="_blank"':'';
+  const aE=ok?'href="https://web.whatsapp.com/send?phone='+phNum+'&text='+mElig+'" target="_blank"':'';
+
+  return '<a class="wb w-blood'+(ok?'':' off')+'" '+aB+'>🩸 Blood</a>'+
+         '<a class="wb w-anest'+(ok&&anestD?'':' off')+'" '+(ok&&anestD?aA:'')+'>💉 Anesthesia</a>'+
+         '<a class="wb w-labs'+(ok&&anestD?'':' off')+'" '+(ok&&anestD?aL:'')+'>🧪 Labs</a>'+
+         '<a class="wb w-elig'+(ok?'':' off')+'" '+aE+'>📋 Eligibility</a>';
 }
 
 load();
